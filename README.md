@@ -5,6 +5,8 @@ This mod is loosely based on the craftable NPCs from Ancient Warfare 2, but for 
 I intend to use this with the Create mod, so expect some compatibility here and there.
 
 ![image](https://github.com/user-attachments/assets/3fd237ec-7892-45a2-aea2-ce4280346ca5)
+![image](https://github.com/user-attachments/assets/70eaed5f-2113-4ec0-96a1-c8c964b95971)
+
 
 
 Features:
