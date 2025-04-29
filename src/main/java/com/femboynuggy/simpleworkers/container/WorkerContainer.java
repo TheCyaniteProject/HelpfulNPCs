@@ -54,13 +54,12 @@ public class WorkerContainer extends AbstractContainerMenu {
         // 4) Worker’s 9 main inventory slots (indices 0–8 in the handler)
         int x0 = 10;
         for (int i = 0; i < 9; i++) {
-            this.addSlot(new SlotItemHandler(inv, i, x0 + i*18, 82));
+            this.addSlot(new SlotItemHandler(inv, i, 20 + i*18, 82));
         }
 
         // 5) Armor slots (handler indices 9–12, FEET→HEAD)
         EquipmentSlot[] armor = {
-          EquipmentSlot.FEET, EquipmentSlot.LEGS,
-          EquipmentSlot.CHEST, EquipmentSlot.HEAD
+            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
         };
         for (int i = 0; i < 4; i++) {
             final int idx = 12 - i;

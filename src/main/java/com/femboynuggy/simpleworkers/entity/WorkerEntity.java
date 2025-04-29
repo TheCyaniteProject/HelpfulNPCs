@@ -12,6 +12,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.DifficultyInstance;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobSpawnType;
@@ -236,5 +237,29 @@ public class WorkerEntity extends PathfinderMob {
         }
 
         System.out.println("[DEBUG] readAdditionalSaveData: cmd=" + getStartPosition());
+    }
+
+    @Override
+    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
+        // first let the vanilla mob drop its equipment, XP, etc.
+        super.dropCustomDeathLoot(source, looting, recentlyHit);
+
+        // 1) drop the “target” item if any
+        ItemStack target = this.getTargetItem();
+        if (!target.isEmpty()) {
+            this.spawnAtLocation(target.copy());
+        }
+
+        // 2) drop everything in our 15-slot handler (or just slots 0–8 if you only
+        //    want the “backpack” and leave armor/tools to vanilla)
+        this.getCapability(ForgeCapabilities.ITEM_HANDLER, null).ifPresent(handler -> {
+            // if you want ONLY slots 0–8 (backpack), loop i<9; here we drop all 15
+            for (int i = 0; i < handler.getSlots(); i++) {
+                ItemStack stack = handler.getStackInSlot(i);
+                if (!stack.isEmpty()) {
+                    this.spawnAtLocation(stack.copy());
+                }
+            }
+        });
     }
 }

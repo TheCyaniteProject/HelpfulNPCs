@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+      "layer0": "simpleworkers:item/worker_contract"
+    }
+  }

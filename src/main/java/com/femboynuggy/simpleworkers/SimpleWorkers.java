@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import com.femboynuggy.simpleworkers.network.SetWorkerCommandPacket;
 import com.femboynuggy.simpleworkers.registry.ModEntities;
+import com.femboynuggy.simpleworkers.registry.ModItems;
 import com.femboynuggy.simpleworkers.registry.ModMenus;
 
 import net.minecraft.resources.ResourceLocation;
@@ -33,6 +34,7 @@ public class SimpleWorkers {
         // 2. Register your DeferredRegister instances
         ModEntities.ENTITIES.register(modEventBus);
         ModEntities.ITEMS.register(modEventBus);
+        ModItems.ITEMS.register(modEventBus);
 
         ModMenus.MENUS.register(modEventBus);
 

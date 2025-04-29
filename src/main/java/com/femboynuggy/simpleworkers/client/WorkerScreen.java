@@ -3,18 +3,22 @@ package com.femboynuggy.simpleworkers.client;
 import com.femboynuggy.simpleworkers.SimpleWorkers;
 import com.femboynuggy.simpleworkers.container.WorkerContainer;
 import com.femboynuggy.simpleworkers.network.SetWorkerCommandPacket;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 public class WorkerScreen extends AbstractContainerScreen<WorkerContainer> {
+    private static final ResourceLocation GUI_TEXTURE =
+        new ResourceLocation(SimpleWorkers.MODID, "textures/gui/worker_gui.png");
     private static final int WIDTH  = 200;
-    private static final int HEIGHT = 250;
+    private static final int HEIGHT = 255;
 
     private EditBox inputField;
     private EditBox inputField2;
@@ -43,20 +47,22 @@ public class WorkerScreen extends AbstractContainerScreen<WorkerContainer> {
         inputField = new EditBox(
           this.font,
           x0 + 33,        // 10px from left edge of GUI
-          y0 + 104,        // 70px down from top edge
+          y0 + 110,        // 70px down from top edge
           152, 20,
           Component.literal("StartPos")
         );
         inputField2 = new EditBox(
           this.font,
           x0 + 33,        // 10px from left edge of GUI
-          y0 + 124,        // 70px down from top edge
+          y0 + 130,        // 70px down from top edge
           152, 20,
           Component.literal("EndPos")
         );
         
         inputField.setMaxLength(100);
         inputField2.setMaxLength(100);
+        inputField.setBordered(false);
+        inputField2.setBordered(false);
         // seed from the container’s command (which was read from the entity on open)
         inputField.setValue(this.menu.worker.getStartPosition());
         inputField2.setValue(this.menu.worker.getEndPosition());
@@ -66,26 +72,30 @@ public class WorkerScreen extends AbstractContainerScreen<WorkerContainer> {
 
     @Override
     public void render(GuiGraphics gui, int mouseX, int mouseY, float partialTicks) {
-        // Hey GPT, don't touch this, I like having the window in the middle of the screen
-        int left = (this.width - WIDTH) / 2;
-        int top = (this.height - HEIGHT) / 2;
-        int right = left + WIDTH;
-        int bottom = top + HEIGHT;
-        // draw black background
-        gui.fill(left, top, right, bottom, 0xB3000000);
-
-        // solid black full‐screen background
-        //gui.fill(0, 0, this.width, this.height, 0xFF000000);
-        // draw all slots, items & buttons
         super.render(gui, mouseX, mouseY, partialTicks);
-        // tooltips if you hover items
         this.renderTooltip(gui, mouseX, mouseY);
     }
 
     @Override
     protected void renderBg(GuiGraphics gui, float partialTicks, int mouseX, int mouseY) {
-        // no GUI texture — slots are drawn for us by super.render()
+        int left = (this.width - WIDTH) / 2;
+        int top = (this.height - HEIGHT) / 2;
+        RenderSystem.setShaderTexture(0, GUI_TEXTURE);
+        // draw it at the top-left of our GUI window
+        gui.blit(GUI_TEXTURE,
+            left, top,
+            0,
+            0,0,
+            WIDTH, HEIGHT,  // width, height to draw
+            WIDTH, HEIGHT  // width, height to draw
+        );
     }
+
+    @Override
+    protected void renderLabels(GuiGraphics gui, int mouseX, int mouseY) {
+        // no-op: don't draw any labels
+    }
+
 
     @Override
     public boolean isPauseScreen() {
