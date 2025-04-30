@@ -1,6 +1,6 @@
 *Disclaimer: I have no idea how to code in Java much less for Minecraft Mods, so GPT-o4 is doing a lot of the heavy lifting for me. This code is messy, and uses bad practices, but it's the best I can do ATM.*
-# SimpleWorkers
-SimpleWorkers is a simple mod that adds one thing: Craftable helpful NPCs.
+# HelpfulNPCs
+HelpfulNPCs is a simple mod that adds one thing: Craftable helpful NPCs.
 This mod is loosely based on the craftable NPCs from Ancient Warfare 2, but for Forge 1.20.1.
 I intend to use this with the Create mod, so expect some compatibility here and there.
 
