@@ -1,18 +1,17 @@
-*Disclaimer: I have no idea how to code in Java much less for Minecraft Mods, so GPT-o4 is doing a lot of the heavy lifting for me. This code is messy, and uses bad practices, but it's the best I can do ATM.*
+*Disclaimer: I have no idea how to code in Java much less for Minecraft Mods, so GPT-o4 is doing a lot of the heavy lifting for me. This code is messy, and uses bad practices, but it's the best I can do until I learn more.*
 # HelpfulNPCs
 HelpfulNPCs is a simple mod that adds one thing: Craftable helpful NPCs to do your work for you! This mod is loosely based on the craftable NPCs from Ancient Warfare 2, but for Forge 1.20.1. I intend to use this with the Create mod, so expect some compatibility here and there.
 
-![image](https://github.com/user-attachments/assets/3fd237ec-7892-45a2-aea2-ce4280346ca5)
-![image](https://github.com/user-attachments/assets/70eaed5f-2113-4ec0-96a1-c8c964b95971)
+![image](https://github.com/user-attachments/assets/f9ee6ead-d7f9-4ff2-b6a9-e2971111b213)
 
-
+![image](https://github.com/user-attachments/assets/87b98933-e359-492b-b2d3-ea4a590504fb)
 
 Features:
 * Craftable Worker NPCs with Dynamically generated textures.
-* Couriers can carry items between containers, such as grabbing ore from furnaces or placing items on Create depots, ect.
+* Haulers can carry items between containers, such as grabbing ore from furnaces or placing items on Create depots, ect.
+* Solder NPCs that follow the player and defend them [WIP - Pretty buggy]
 
 Planned:
-* Solder NPC
 * Farmer NPC
 * Rancher NPC
 * Fishing NPC
@@ -24,4 +23,4 @@ Planned:
 * Maybe some interaction with MCA: Reborn?
 
 # License
-GLP v3 [LICENSE](LICENSE). Take this mod, rip it apart, and do unreasonable things to it, idc.
+GLP v3 [LICENSE](LICENSE). Take this mod, rip it apart, and do unreasonable things to it.
