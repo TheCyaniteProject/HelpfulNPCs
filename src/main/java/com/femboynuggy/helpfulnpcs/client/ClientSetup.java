@@ -122,7 +122,7 @@ public class ClientSetup {
         return loc;
 
       } catch (IOException ex) {
-        //SimpleWorkers.LOGGER.error("Failed to compose worker textures!", ex);
+        //HelpfulNPCs.LOGGER.error("Failed to compose worker textures!", ex);
         // fallback to first body:
         return BODIES[0];
       }

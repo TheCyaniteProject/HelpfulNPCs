@@ -8,7 +8,6 @@ import com.femboynuggy.helpfulnpcs.registry.ModItems;
 import com.femboynuggy.helpfulnpcs.registry.ModMenus;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;

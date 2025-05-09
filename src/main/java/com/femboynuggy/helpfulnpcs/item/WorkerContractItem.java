@@ -53,6 +53,8 @@ public class WorkerContractItem extends Item {
         // 5) Add it to the world
         sLevel.addFreshEntity(worker);
 
+        worker.setOwnerUUID(player.getUUID());
+
         // 6) Consume the contract
         if (!player.isCreative()) stack.shrink(1);
 

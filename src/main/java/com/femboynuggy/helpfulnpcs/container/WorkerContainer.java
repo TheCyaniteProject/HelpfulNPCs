@@ -1,14 +1,9 @@
 package com.femboynuggy.helpfulnpcs.container;
 
-import com.femboynuggy.helpfulnpcs.HelpfulNPCs;
 import com.femboynuggy.helpfulnpcs.entity.WorkerEntity;
-import com.femboynuggy.helpfulnpcs.network.SetWorkerCommandPacket;
 import com.femboynuggy.helpfulnpcs.registry.ModMenus;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -17,15 +12,13 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.TieredItem;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
 public class WorkerContainer extends AbstractContainerMenu {
     public final WorkerEntity worker;
-    private final IItemHandler inv; // the 15-slot capability
+    private final IItemHandler inv; // the 29-slot inventory
 
     public WorkerContainer(int windowId, Inventory playerInv, int entityId) {
         super(ModMenus.WORKER_MENU.get(), windowId);
@@ -33,23 +26,8 @@ public class WorkerContainer extends AbstractContainerMenu {
         // 1) Lookup the WorkerEntity on both client & server
         this.worker = (WorkerEntity) playerInv.player.level().getEntity(entityId);
 
-        // 2) Grab its ItemStackHandler capability (15 slots)
-        this.inv = worker.getCapability(ForgeCapabilities.ITEM_HANDLER)
-                         .orElseThrow(() -> new IllegalStateException("Missing Worker inventory"));
-
-        // 3) Single “TargetItem” slot (uses your SynchedEntityData under the hood)
-        this.addSlot(new Slot(new SimpleContainer(1), 0, 10, 105) {
-            @Override public boolean mayPlace(ItemStack stack) { return true; }
-            @Override public ItemStack getItem() {
-                return worker.getTargetItem();
-            }
-            @Override public void set(ItemStack stack) {
-                ItemStack copy = stack.isEmpty() ? ItemStack.EMPTY : stack.copy();
-                worker.setTargetItem(copy);
-                broadcastChanges();
-            }
-            @Override public boolean mayPickup(Player player) { return true; }
-        });
+        // 2) Grab its ItemStackHandler capability (29 slots)
+        this.inv = worker.getCapability(ForgeCapabilities.ITEM_HANDLER).orElseThrow(() -> new IllegalStateException("Missing Worker inventory"));
 
         // 4) Worker’s 9 main inventory slots (indices 0–8 in the handler)
         int x0 = 10;
@@ -57,7 +35,7 @@ public class WorkerContainer extends AbstractContainerMenu {
             this.addSlot(new SlotItemHandler(inv, i, 20 + i*18, 82));
         }
 
-        // 5) Armor slots (handler indices 9–12, FEET→HEAD)
+        // 5) Armor slots (handler indices 9-12, FEET→HEAD)
         EquipmentSlot[] armor = {
             EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
         };
@@ -86,10 +64,17 @@ public class WorkerContainer extends AbstractContainerMenu {
             }
         });
 
+        // 8) Add 15 item slots for second window scrollable list (indices 15–29 in the handler)
+        // int baseX = 210; // Adjusted to align with second window (WIDTH + padding)
+        // int baseY = 10;
+        // int slotSize = 18;
+        // for (int i = 0; i < 15; i++) {
+        //     int slotY = baseY + i * (slotSize * 2 + 7); // match WorkerScreen layout spacing
+        //     this.addSlot(new SlotItemHandler(inv, 15 + i, baseX, slotY));
+        // }
+
         // TODO (Optionally) add player inventory slots so you can click real items around:
         layoutPlayerInventorySlots(playerInv, /*left=*/20, /*top=*/172);
-
-        // 8) Sync the initial contents of EVERY slot (including your target‐slot)
         this.slotsChanged(playerInv);
     }
 
