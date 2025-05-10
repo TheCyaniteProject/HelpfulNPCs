@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.femboynuggy.helpfulnpcs.entity.WorkerEntity;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -14,10 +13,12 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
@@ -25,52 +26,51 @@ import net.minecraftforge.items.ItemHandlerHelper;
 public class CommandMoveToGoal extends Goal {
     private final WorkerEntity mob;
     private final double speed;
+    private Path path;  
+    private int recalcCooldown = 0;
+    private double stoppingDistance = 3.0;
 
-    private enum Stage { GO_TO_TARGET, WAIT_AFTER_OP }
+    enum Stage { GO_TO_TARGET, WAIT_AFTER_OP }
     private Stage stage = Stage.GO_TO_TARGET;
-
     private final List<TargetEntry> entries = new ArrayList<>();
     private int currentIndex = 0;
     private int waitTicks    = 0;
-
-    // ← NEW: remember what size we loaded at start()
     private int lastListSize = 0;
 
     public CommandMoveToGoal(WorkerEntity mob, double speed) {
         this.mob   = mob;
         this.speed = speed;
         this.setFlags(EnumSet.of(Flag.MOVE));
+        if (!(mob.getNavigation() instanceof GroundPathNavigation))
+            throw new IllegalArgumentException("Must have GroundPathNavigation");
     }
 
     @Override
     public boolean canUse() {
-        // only run this goal if the worker is holding a book & quill
         if (mob.getMainHandItem().getItem() != Items.WRITABLE_BOOK) return false;
         if (mob.isInteracting()) return false;
-        boolean ok = parseEntries();
-        if (ok) lastListSize = entries.size();
-        return ok;
+        if (!parseEntries()) return false;
+        lastListSize = entries.size();
+        currentIndex = 0;
+        stage = Stage.GO_TO_TARGET;
+        waitTicks = 0;
+        // force an immediate path calculation
+        recalcCooldown = 0;
+        computePathToCurrent();
+        return path != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        // drop out immediately if they let go of the book & quill
         if (mob.getMainHandItem().getItem() != Items.WRITABLE_BOOK) return false;
         if (mob.isInteracting()) return false;
-        // also re-parse and check for listData changes
-        boolean ok = parseEntries();
-        if (!ok || entries.size() != lastListSize) {
-            return false;
-        }
+        if (!parseEntries() || entries.size() != lastListSize) return false;
         return true;
     }
 
     @Override
     public void start() {
-        currentIndex = 0;
-        waitTicks    = 0;
-        stage        = Stage.GO_TO_TARGET;
-        navigateToCurrent();
+        // nothing more to do; we've already computed path in canUse()
     }
 
     @Override
@@ -81,55 +81,62 @@ public class CommandMoveToGoal extends Goal {
 
     @Override
     public void tick() {
-        if (mob.isInteracting()) {
-            mob.getNavigation().stop();
-            return;
-        }
         if (entries.isEmpty()) return;
         TargetEntry te = entries.get(currentIndex);
 
-        double dist2 = mob.position()
-                        .distanceToSqr(te.pos.getX() + 0.5,
-                                    te.pos.getY() + 0.5,
-                                    te.pos.getZ() + 0.5);
-        switch(stage) {
-            case GO_TO_TARGET:
-                if (dist2 <= 5.0) {
-                    mob.getNavigation().stop();
+        // look at the block
+        mob.getLookControl().setLookAt(
+            te.pos.getX()+0.5, te.pos.getY()+0.5, te.pos.getZ()+0.5,
+            30, 30
+        );
 
-                    if (!mob.level().isClientSide) {
-                        mob.swing(InteractionHand.MAIN_HAND, true); // This isn't working for some reason
-                        //System.out.println(">> SERVER: swung arm and broadcasted entity event");
-                    }
-                    
-                    if ("extract".equalsIgnoreCase(te.mode)) {
-                        extractFromContainer(te);
-                    } else {
-                        insertToContainer(te);
-                    }
+        // if we've lost our path or it’s done, or we’ve been on it too long, recompute
+        if (mob.getNavigation().isDone() 
+            || mob.getNavigation().isStuck() 
+            || --recalcCooldown <= 0) {
+            computePathToCurrent();
+        }
 
-                    stage     = Stage.WAIT_AFTER_OP;
-                    waitTicks = 0;
-                }
-                break;
+        // now the nav will automatically follow 'path' around obstacles
+        // check arrival
+        double dist2 = mob.position().distanceToSqr(
+            te.pos.getX()+0.5, te.pos.getY()+0.5, te.pos.getZ()+0.5
+        );
 
-            case WAIT_AFTER_OP:
-                if (++waitTicks >= 20) {
-                    currentIndex = (currentIndex + 1) % entries.size();
-                    navigateToCurrent();
-                    stage = Stage.GO_TO_TARGET;
-                }
-                break;
+        if (stage == Stage.GO_TO_TARGET && dist2 <= stoppingDistance) {
+            mob.getNavigation().stop();
+
+            mob.swing(InteractionHand.MAIN_HAND);
+
+            if ("extract".equalsIgnoreCase(te.mode)) {
+                extractFromContainer(te);
+            } else {
+                insertToContainer(te);
+            }
+
+            stage = Stage.WAIT_AFTER_OP;
+            waitTicks = 0;
+            return;
+        }
+
+        if (stage == Stage.WAIT_AFTER_OP && ++waitTicks >= 20) {
+            currentIndex = (currentIndex + 1) % entries.size();
+            stage = Stage.GO_TO_TARGET;
+            // force a fresh path for the new target
+            computePathToCurrent();
+            waitTicks = 0;
         }
     }
 
-    private void navigateToCurrent() {
+    /** Builds a fresh A* path to entries.get(currentIndex) and starts following it. */
+    private void computePathToCurrent() {
         TargetEntry te = entries.get(currentIndex);
-        mob.getNavigation()
-           .moveTo(te.pos.getX() + 0.5,
-                   te.pos.getY() + 0.5,
-                   te.pos.getZ() + 0.5,
-                   speed);
+        // use a small “fudge” parameter so we can step up blocks if needed
+        this.path = mob.getNavigation().createPath(te.pos, 0);
+        if (path != null) {
+            mob.getNavigation().moveTo(path, speed);
+            recalcCooldown = 40 + mob.getRandom().nextInt(40);
+        }
     }
 
     private boolean parseEntries() {

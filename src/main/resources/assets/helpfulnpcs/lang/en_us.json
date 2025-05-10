@@ -1,3 +1,4 @@
 {
-    "item.helpfulnpcs.contract": "NPC Contract"
+    "item.helpfulnpcs.contract": "NPC Contract",
+    "entity.helpfulnpcs.worker": "NPC Worker"
 }

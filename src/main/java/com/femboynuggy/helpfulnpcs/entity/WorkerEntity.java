@@ -15,7 +15,6 @@ import com.femboynuggy.helpfulnpcs.registry.ModEntities;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -29,27 +28,29 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.ai.goal.FloatGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.OpenDoorGoal;
 import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RangedBowAttackGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
-import net.minecraft.world.entity.ai.goal.target.OwnerHurtTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
-import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BowItem;
@@ -66,7 +67,6 @@ import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PlayMessages;
-import net.minecraft.world.entity.TamableAnimal;
 
 public class WorkerEntity extends PathfinderMob implements RangedAttackMob {
     // renamed from DATA_GHOST_ITEM → DATA_TARGET_ITEM
@@ -128,8 +128,8 @@ public class WorkerEntity extends PathfinderMob implements RangedAttackMob {
     public WorkerEntity(EntityType<? extends WorkerEntity> type, Level world) {
         super(type, world);
         this.setPersistenceRequired();
-        this.moveControl = new MoveControl(this);
-        this.navigation  = new GroundPathNavigation(this, world);
+        //this.moveControl = new MoveControl(this);
+        //this.navigation  = new GroundPathNavigation(this, world);
     }
 
     public WorkerEntity(PlayMessages.SpawnEntity msg, Level world) {
@@ -141,6 +141,28 @@ public class WorkerEntity extends PathfinderMob implements RangedAttackMob {
     public WorkerEntity(FriendlyByteBuf buf, Level world) {
         this(ModEntities.WORKER.get(), world);
     }
+    
+    @Override
+    protected void registerGoals() {
+        super.registerGoals();
+
+        this.goalSelector.addGoal(0, new FloatGoal(this));
+        this.goalSelector.addGoal(0, new NaturalRegenGoal(this, 20*10, 20));
+        this.goalSelector.addGoal(0, new OpenDoorGoal(this, true));
+
+        this.targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
+        this.targetSelector.addGoal(1, new DefendMasterHurtByTargetGoal(this));
+        this.goalSelector.addGoal(1, new WorkerBowAttackGoal(this, 1.2D, 20, 15.0F));
+
+        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.5D, true));
+        this.targetSelector.addGoal(2, new DefendMasterHurtTargetGoal(this));
+
+        this.goalSelector.addGoal(3, new PanicGoal(this, 1.25));
+        this.goalSelector.addGoal(4, new FollowMasterGoal(this, 1.5D, 5.0F));
+        this.goalSelector.addGoal(4, new CommandMoveToGoal(this, 1.0D));
+        this.goalSelector.addGoal(9, new LookAtPlayerGoal(this, Player.class, 8.0F, 1.0F));
+        this.goalSelector.addGoal(10, new LookAtPlayerGoal(this, Mob.class, 6.0F));
+    }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
@@ -149,9 +171,8 @@ public class WorkerEntity extends PathfinderMob implements RangedAttackMob {
 
     private boolean interacting = false;
 
-    // called when you open the GUI in your onInteract or NetworkHooks.openGui callback:
     public void setInteracting(boolean b) {
-        System.out.println("CLIENT: "+b);
+        //System.out.println("CLIENT: "+b);
         this.interacting = b;
     }
     public boolean isInteracting() {
@@ -201,36 +222,23 @@ public class WorkerEntity extends PathfinderMob implements RangedAttackMob {
         return super.finalizeSpawn(world, difficulty, reason, data, tag);
     }
 
+    @Override
+    protected PathNavigation createNavigation(Level world) {
+        GroundPathNavigation nav = new GroundPathNavigation(this, world);
+        // allow opening wooden doors
+        nav.setCanOpenDoors(true);
+        // allow walking **through** an open door block
+        nav.setCanPassDoors(true);
+        // if you want them to swim, too:
+        nav.setCanFloat(true);
+        return nav;
+    }
+
     // getters for the four indices:
     public int  getBodyIndex()   { return this.entityData.get(DATA_BODY);   }
     public int  getOutfitIndex() { return this.entityData.get(DATA_OUTFIT); }
     public int  getEyesIndex()   { return this.entityData.get(DATA_EYES);   }
     public int  getHairIndex()   { return this.entityData.get(DATA_HAIR);   }
-
-    @Override
-    protected void registerGoals() {
-        super.registerGoals();
-
-        this.goalSelector.addGoal(0, new NaturalRegenGoal(this, 20*10, 20));
-        // MELEE first:
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.5D, true));
-        // then follow master if we have a weapon:
-        this.goalSelector.addGoal(3, new FollowMasterGoal(this, 1.5D, 5.0F));
-        // then bow (if bow in hand):
-        this.goalSelector.addGoal(1, new WorkerBowAttackGoal(this, 1.2D, 20, 15.0F));
-        // normal idle/look goals:
-        this.goalSelector.addGoal(4, new PanicGoal(this, 1.25));
-        //this.goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 1.0)); // TODO Might re-implement this later, but for now it's just annoying
-        this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
-        this.goalSelector.addGoal(7, new LookAtPlayerGoal(this, Player.class, 8.0F));
-        // your move‐to‐listData goal:
-        this.goalSelector.addGoal(9, new CommandMoveToGoal(this, 1.0D));
-
-        // DEFENSIVE target goals:
-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this).setAlertOthers());
-        this.targetSelector.addGoal(1, new DefendMasterHurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new DefendMasterHurtTargetGoal(this));
-    }
 
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes()

@@ -6,11 +6,9 @@ import java.util.List;
 
 import com.femboynuggy.helpfulnpcs.HelpfulNPCs;
 import com.femboynuggy.helpfulnpcs.container.WorkerContainer;
-import com.femboynuggy.helpfulnpcs.entity.WorkerEntity;
 import com.femboynuggy.helpfulnpcs.network.SetWorkerCommandPacket;
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
