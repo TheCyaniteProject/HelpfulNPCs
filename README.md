@@ -1,3 +1,5 @@
+This mod is on hold, and will likely not be updated anymore. My goal was always to just get Ancient Warfare 2 NPCs into modern Minecraft, but it looks like [ydmsama](https://www.curseforge.com/members/ydmsama/projects) beat me to it. You can find their mod here: https://www.curseforge.com/minecraft/mc-mods/hundred-years-warfare
+
 *Disclaimer: I have no idea how to code in Java much less for Minecraft Mods, so GPT-o4 is doing a lot of the heavy lifting for me. This code is messy, and uses bad practices, but it's the best I can do until I learn more.*
 # HelpfulNPCs
 HelpfulNPCs is a simple mod that adds one thing: Craftable helpful NPCs to do your work for you! This mod is loosely based on the craftable NPCs from Ancient Warfare 2, but for Forge 1.20.1. I intend to use this with the Create mod, so expect some compatibility here and there.
